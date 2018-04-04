@@ -1,0 +1,130 @@
+<html>
+
+<head>
+    <title>Geo tweets</title>
+
+    <style>
+      #map {
+        height: 100%;
+      }
+      #tweets_list{
+        height: 200px;
+        overflow: scroll;
+      }
+      html, body {
+        height: 100%;
+        margin: 0;
+        padding: 10;
+      }
+    </style>
+</head>
+
+<body>
+
+<H1>Geo Tweets</H1>
+<p>Search geo tweets, introduce 1 or 2 coordinates to search nearby tweets (2 coordinate points nearby in north, south, east, and west
+    over or under
+    of given coordinates. The max tweets is 50, then the first retrieved will be removed)</p>
+Filter by coordinates: <input type="text" id="coord1"/><input type="text" id="coord2"/>
+<input type="button" id="clear" value="Clear markers"/>
+<div>
+    <ul id="tweets_list"/>
+
+</div>
+
+<div id="map"></div>
+
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+
+<script async defer
+        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAxLIbtKm87ZG8w6lY8yzHUVvOBxgW622I&callback=initMap">
+</script>
+
+<script>
+      function initMap() {
+        map = new google.maps.Map(document.getElementById('map'), {
+          zoom: 3,
+          center: {lat: 0, lng: 0}
+        });
+        markersArray = []
+
+      }
+
+    $(document).ready(function() {
+
+        function getTweets() {
+            var c1 = $('#coord1').val();
+            var c2 = $('#coord2').val();
+
+                $.ajax({
+                    dataType: "json",
+                    data: {
+                        "coord1": c1,
+                        "coord2": c2
+                    },
+                    url: "/tweets",
+                    success:
+
+                        function(data) {
+
+                            if ($('#tweets_list li').length > 50) {
+                                $('#tweets_list li').slice(-1).remove()
+                            }
+
+                            $.each(data, function(i, item) {
+                                var user_id = item.user_id
+                                var tweet_id = item.tweet_id
+                                var url = "http://twitter.com/" + user_id + "/status/" + tweet_id
+
+                                var a = document.createElement("a");
+                                a.textContent = url;
+                                a.setAttribute("href", url);
+                                a.setAttribute("target", "_blank");
+
+                                var li = $(document.createElement('li')).text(
+                                        item.created_at.substr(0, 19) + "  |||  " +
+                                        item.coordinates + "  |||  " +
+                                        item.user + "  |||  " +
+                                        item.text + "  |||  "
+                                    );
+                                li.append(a);
+                                $('#tweets_list').prepend(
+                                    li
+                                );
+
+                                var marker = new google.maps.Marker({
+                                    position: {
+                                        lat: item.coordinates[0],
+                                        lng: item.coordinates[1]
+                                    },
+                                    map: map
+                                });
+                                markersArray.push(marker)
+
+                                if (markersArray.length > 50) {
+                                    markersArray[0].setMap(null);
+                                    markersArray.splice(0, 1)
+                                }
+                            });
+                        }
+                });
+        };
+
+        setInterval(getTweets, 1000); // interval set to 1 second
+
+    });
+
+
+    $("#clear").click(function() {
+        markersArray.forEach(function(marker) {
+            marker.setMap(null);
+        });
+        markersArray=[]
+    });
+
+</script>
+
+</body>
+
+</html>

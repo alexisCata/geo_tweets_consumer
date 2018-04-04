@@ -1,0 +1,23 @@
+version: '2'
+
+services:
+  # Mongo database
+  db:
+    image: mongo
+    hostname: db
+    ports:
+      - "27017:27017"
+
+  # Flask web twitter consumer
+  flask:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    hostname: twitter
+    ports:
+      - "5000:5000"
+      - "15672:15672"
+    links:
+      - db
+    depends_on:
+      - db
